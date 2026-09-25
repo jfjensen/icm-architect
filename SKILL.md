@@ -61,7 +61,9 @@ Real workspaces mix forms (a record library whose records are mini knowledge bun
 
 **4. Write the contracts.** Root `CLAUDE.md` (identity + routing table), root `CONTEXT.md` (the pipeline or schema definition), one `CONTEXT.md` per stage/hub folder, `setup/questionnaire.md` if the factory needs configuring per user. Write inputs as explicit file paths, split into working (this run) and reference (every run).
 
-**5. Validate with the walk test** (below).
+**5. Decide how hard the gates must be.** Ask which agent will run the workspace. A strong model follows prose contracts. A small or local model, or any long fail-fix loop (code, builds, data validation), needs the gates scripted: a `status` script that prints the one next action, a validator that prints `FIX:` lines, approval only through a human-run command, and a wrapper that counts fix attempts. Read [references/hardening.md](references/hardening.md) and add only the rungs the expected failures call for.
+
+**6. Validate with the walk test** (below).
 
 ## Restructure mode
 
@@ -96,12 +98,14 @@ Validate any ICM — new or restructured — by walking it cold, as an agent wit
 - After a restructure: does every reference that existed *before* the move still resolve? A moved file that something still points at is a break, not a tidy-up.
 - Token check: entry file + one contract + its inputs should land in roughly 2k–8k tokens.
 - System map only: can a cold agent answer *what is X* and *what else moves if I change X* from `map/CLAUDE.md` plus one card? Extra checks are in [references/system-map.md](references/system-map.md).
+- Walk it as the **weakest agent that will run it**. Could that agent skip the self-check, write its own format instead of the template, or mark its own stage approved and keep going? If so, script that gate ([references/hardening.md](references/hardening.md)).
 
-If a step fails, fix the structure — not by explaining more, but by moving or splitting files until the walk works.
+If a step fails, fix the structure — not by explaining more, but by moving or splitting files until the walk works. After a real run, the run's trouble log is the next walk test: every recurring entry points at a gate or a contract to fix.
 
 ## Guardrails
 
 - **Don't over-structure.** The ladder runs: chat → saved prompt/skill → folders + one agent. Only climb when the rung below is genuinely automated and repeating. A workspace for a thing done twice is scaffolding, not architecture.
+- **Prose gates leak.** Small and local models do the visible half of a step (write the file, report `ok`) and drop the checking half (self-check, approval, the retry limit). Every rule an agent breaks once becomes a script it cannot talk its way around: a validator, human-only approval bound to a content hash, a fix-loop wrapper that counts attempts and says STOP. Keep a per-run trouble log so the next improvement comes from evidence. See [references/hardening.md](references/hardening.md).
 - **Know where ICM loses.** Real-time multi-agent collaboration, high-concurrency multi-user serving, and automated mid-pipeline branching genuinely need framework code. ICM is for sequential, human-reviewed, repeatable work — which is most knowledge work, but not all of it.
 - **Anti-patterns seen in the wild:** duplicated entry files that drift (generate one from the other, or make one a pointer); schema documents that mandate names the actual files stopped using (update the schema or the files — pick one); hand-edits to generated indexes; workshop sessions that produce slides instead of structured data (every working session should end in an artifact the structure can hold); patterns declared top-down (one team complaining is a gripe — the same shape appearing three independent times is structure).
 
@@ -111,4 +115,5 @@ If a step fails, fix the structure — not by explaining more, but by moving or 
 - [references/forms.md](references/forms.md) — the six forms in depth: skeletons, moves, failure modes. Read at step 2 of Build mode or step 2 of Restructure mode.
 - [references/system-map.md](references/system-map.md) — audit pipeline for the System map form. Read when that form is chosen.
 - [references/reference-integrity.md](references/reference-integrity.md) — the move-safety gate: what points at a file, case-folded destinations, copy-verify-remove. Read at step 4 of Restructure mode, or any time a move is contested.
+- [references/hardening.md](references/hardening.md) — making a workspace hold up under small/local models: observed failure modes, the enforcement scripts (status, validator, human-only approval, fix-loop wrapper), contracts a small model can follow, tested snippet libraries, the trouble log, protecting the factory. Read at Build step 5, after a run went off-contract, or when the workspace has a fail-fix loop.
 - [assets/templates/](assets/templates/) — copyable starters: `CLAUDE.md`, workspace `CONTEXT.md`, `stage-CONTEXT.md`, `node.md`, `object.md`, `process.md`, `schema.md`, `questionnaire.md`.
